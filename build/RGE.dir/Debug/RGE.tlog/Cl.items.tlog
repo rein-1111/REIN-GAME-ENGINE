@@ -1,6 +1,0 @@
-D:\Project\Code\RGE\Deps\GLAD\src\glad.c;D:\Project\Code\RGE\build\RGE.dir\Debug\glad.obj
-D:\Project\Code\RGE\Main.cpp;D:\Project\Code\RGE\build\RGE.dir\Debug\Main.obj
-D:\Project\Code\RGE\Renderer\Backend\Wrapper\OpenGl.cpp;D:\Project\Code\RGE\build\RGE.dir\Debug\OpenGl.obj
-D:\Project\Code\RGE\Renderer\Renderer.cpp;D:\Project\Code\RGE\build\RGE.dir\Debug\Renderer.obj
-D:\Project\Code\RGE\Windowing\Windowing.cpp;D:\Project\Code\RGE\build\RGE.dir\Debug\Windowing.obj
-D:\Project\Code\RGE\Renderer\Backend\OpenGlRenderer.cpp;D:\Project\Code\RGE\build\RGE.dir\Debug\OpenGlRenderer.obj

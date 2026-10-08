@@ -1,0 +1,10 @@
+^D:\PROJECT\CODE\RGE\BUILD\CMAKEFILES\F5CF6CFF158B36A9F3A57AF5AD2E8F7D\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Project/Code/RGE -BD:/Project/Code/RGE/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/Project/Code/RGE/build/RGE.slnx
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

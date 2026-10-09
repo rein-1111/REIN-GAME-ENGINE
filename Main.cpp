@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
-#include "Windowing/Windowing.hpp"
 #include "Renderer/Renderer.hpp"
+#include "Windowing/Windowing.hpp"
 
 std::string vertShader = R"(
 #version 460 core
@@ -63,31 +63,10 @@ int main()
     profile.version_major = 4;
     profile.version_minor = 6;
 
-    Windowing::Init();
-    Windowing::SetOpenGlProfile(profile);
-    Windowing::CreateWindow(win);
-    Windowing::SetContext(win);
-
-    RGE::ShaderHandle shaderHandle;
-    RGE::ShaderSource shaderSource;
-    shaderSource.vertSource = vertShader;
-    shaderSource.fragSource = fragShader;
-
-    RGE::VertexAttribute aPos;
-    aPos.index = 0;
-    aPos.size = 3;
-    aPos.relative = 0;
-
-    RGE::VertexAttribute aColor;
-    aColor.index = 1;
-    aColor.size = 3;
-    aColor.relative = 3;
-
-    RGE::VertexLayout layout;
-    layout.index = 0;
-    layout.offset = 0;
-    layout.stride = 6;
-    layout.attributes = {aPos, aColor};
+    RGE::BufferBit bufferBit;
+    bufferBit.color = true;
+    bufferBit.depth = true;
+    bufferBit.stencil = false;
 
     RGE::Color clearColor;
     clearColor.r = 0.1f;
@@ -95,39 +74,61 @@ int main()
     clearColor.b = 0.3f;
     clearColor.a = 1.0f;
 
-    RGE::MeshHandle meshHandle;
-    RGE::MeshSource meshSource;
-    meshSource.vertices = vertices;
-    meshSource.indices = indices;
-    meshSource.layout = layout;
+    Windowing::Init();
+    Windowing::SetOpenGlProfile(profile);
+    Windowing::CreateWindow(win);
+    Windowing::SetContext(win);
 
-    RGE::DepthStencilParams bufferParams;
-    bufferParams.depthTest = true;
-    bufferParams.stencilTest = false;
-
-    RGE::ClearParams Clear;
-    Clear.color = true;
-    Clear.depth = true;
-    Clear.stencil = false;
-
-    RGE::Renderer::backend = RGE::Backend::OpenGl;
     RGE::Renderer::Init();
-    RGE::Renderer::SetDepthStencil(bufferParams);
     RGE::Renderer::SetClearColor(clearColor);
-    RGE::Renderer::CreateShader(shaderHandle, shaderSource);
-    RGE::Renderer::CreateMesh(meshHandle, meshSource);
-    RGE::Renderer::UseShader(shaderHandle);
-    RGE::Renderer::BindMesh(meshHandle);
+
+    RGE::Pipeline pipeline{};
+    RGE::Renderer::CreatePipeline(pipeline, vertShader, fragShader);
+
+    RGE::VertexArray vao{};
+    RGE::Renderer::CreateVertexArray(vao);
+
+    RGE::VertexBuffer vbo{};
+    RGE::Renderer::CreateBuffer(vbo);
+    RGE::Renderer::SetBufferData(vbo, vertices.size() * sizeof(float), vertices.data(), RGE::BufferUsage::STATIC_DRAW);
+
+    RGE::IndexBuffer ibo{};
+    ibo.count = static_cast<uint32_t>(indices.size());
+    RGE::Renderer::CreateBuffer(ibo);
+    RGE::Renderer::SetBufferData(ibo, indices.size () * sizeof(unsigned int), indices.data(), RGE::BufferUsage::STATIC_DRAW);
+
+    RGE::VertexLayout layout{};
+    RGE::VertexAttribute aPos{};
+    RGE::VertexAttribute aColor{};
+
+    aPos.bindingIndex =0;
+    aPos.location =0;
+    aPos.size =3;
+    aPos.offset =0;
+    aPos.stride = 6 * sizeof(float);
+    aPos.dataType = RGE::DataType::FLOAT;
+
+    aColor.bindingIndex =0;
+    aColor.location =1;
+    aColor.size =3;
+    aColor.offset = 3 * sizeof(float);
+    aColor.stride = 6 * sizeof(float);
+    aColor.dataType = RGE::DataType::FLOAT;
+
+    layout.attribute = {aPos, aColor};
+
+    RGE::Renderer::SetVertexLayout(vao, vbo, layout);
+    RGE::Renderer::SetVertexIndex(vao, ibo);
+
     while (Windowing::WindowActive(win))
     {
-        RGE::Renderer::Clear(Clear);
-
-        RGE::Renderer::DrawMesh(meshHandle);
+        RGE::Renderer::ClearBufferBit(bufferBit);
+        RGE::Renderer::UsePipeline(pipeline);
+        RGE::Renderer::BindVertexArray(vao);
+        RGE::Renderer::DrawIndexed(RGE::DrawMode::TRIANGLES, ibo);
         Windowing::SwapBuffers(win);
         Windowing::PollEvent();
     }
-    RGE::Renderer::UnbindMesh();
-    RGE::Renderer::DestroyShader(shaderHandle);
     Windowing::DestroyWindow(win);
     Windowing::Quit();
 }

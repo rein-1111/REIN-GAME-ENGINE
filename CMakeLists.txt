@@ -7,16 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED  true)
 add_executable(RGE 
 ${CMAKE_SOURCE_DIR}/Deps/GLAD/src/glad.c
 Main.cpp
-Renderer/Backend/Wrapper/OpenGl.cpp
-Renderer/Backend/Wrapper/OpenGl.hpp
-Renderer/Backend/OpenGlRenderer.hpp
-Renderer/I_Renderer.hpp
-Renderer/Renderer.cpp
-Renderer/Renderer.hpp
 Windowing/Windowing.cpp
 Windowing/Windowing.hpp
-Renderer/Backend/OpenGlRenderer.cpp
-
+Renderer/IRenderer.hpp
+Renderer/Backend/OpenGlRenderer.hpp
+Renderer/Backend/wrapper/OpenGl.hpp
+Renderer/Renderer.hpp
 )
 
 target_compile_definitions(RGE PRIVATE

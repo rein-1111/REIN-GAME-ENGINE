@@ -22,7 +22,7 @@ DEBUG_OPENGLBACKEND
 target_include_directories(RGE PRIVATE
 ${CMAKE_SOURCE_DIR}/Deps/GLAD/include
 ${CMAKE_SOURCE_DIR}/Deps/GLFW/include/
-${CMAKE_SOURCE_DIR}Deps/GLM/
+${CMAKE_SOURCE_DIR}/Deps/GLM/
 ${CMAKE_SOURCE_DIR}/Debug/
 )
 

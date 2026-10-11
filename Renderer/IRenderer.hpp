@@ -102,7 +102,8 @@ namespace RGE
         STENCIL8,
         RGBA8
     };
-    enum class FrameBufferAttachment{
+    enum class FrameBufferAttachment
+    {
         COLOR0,
         COLOR1,
         COLOR2,
@@ -227,17 +228,16 @@ namespace RGE
         uint32_t width;
         uint32_t height;
     };
-    struct FrameBuffer{
+    struct FrameBuffer
+    {
         uint32_t handle;
 
-        bool const operator<(const FrameBuffer&other) const{
+        bool const operator<(const FrameBuffer &other) const
+        {
             return handle < other.handle;
         }
     };
-    struct FrameBufferDesc{
-        uint32_t width;
-        uint32_t height;
-    };
+
     class IRenderer
     {
     public:
@@ -245,6 +245,8 @@ namespace RGE
         virtual void SetClearColor(Color &color) = 0;
         virtual void ClearBufferBit(BufferBit &bufferBit) = 0;
         virtual void SetRenderState(RenderState renderState) = 0;
+
+        virtual void SetViewport(int x, int y, uint32_t width, uint32_t height) = 0;
 
         virtual void CreatePipeline(Pipeline &pipeline, std::string vertSource, std::string fragSource) = 0;
         virtual void UsePipeline(Pipeline &pipeline) = 0;
@@ -288,5 +290,14 @@ namespace RGE
         virtual void CreateRenderbuffer(RenderBuffer &renderBuffer, RenderBufferDesc &desc) = 0;
         virtual void ResizeRenderbuffer(RenderBuffer &renderBuffer, uint32_t width, uint32_t height) = 0;
         virtual void DestroyRenderbuffer(RenderBuffer &renderBuffer) = 0;
+
+        virtual void CreateFramebuffer(FrameBuffer &framebuffer) = 0;
+        virtual void AttachTexture(FrameBuffer &framebuffer, Texture &texture, FrameBufferAttachment attachment, uint32_t mipLevel = 0) = 0;
+        virtual void AttachRenderbuffer(FrameBuffer &framebuffer, RenderBuffer &renderBuffer, FrameBufferAttachment attachment) = 0;
+        virtual bool CheckFramebuffer(FrameBuffer &framebuffer) = 0;
+        virtual void DestroyFramebuffer(FrameBuffer &framebuffer) = 0;
+        virtual void BindFramebuffer(FrameBuffer &framebuffer) = 0;
+        virtual void BindDefaultFramebuffer() = 0;
+        virtual void SetFramebufferDrawBuffers(FrameBuffer &framebuffer, const std::vector<FrameBufferAttachment> &attachments) = 0;
     };
 }

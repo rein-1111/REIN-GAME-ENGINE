@@ -24,6 +24,8 @@ namespace RGE
         static void ClearBufferBit(BufferBit &bufferBit);
         static void SetRenderState(RenderState renderState);
 
+        static void SetViewport(int x, int y, uint32_t width, uint32_t height);
+
         static void CreatePipeline(Pipeline &pipeline, std::string vertSource, std::string fragSource);
         static void UsePipeline(Pipeline &pipeline);
 
@@ -66,6 +68,15 @@ namespace RGE
         static void CreateRenderbuffer(RenderBuffer &renderBuffer, RenderBufferDesc &desc);
         static void ResizeRenderbuffer(RenderBuffer &renderBuffer, uint32_t width, uint32_t height);
         static void DestroyRenderbuffer(RenderBuffer &renderBuffer);
+
+        static void CreateFramebuffer(FrameBuffer &framebuffer);
+        static void AttachTexture(FrameBuffer &framebuffer, Texture &texture, FrameBufferAttachment attachment, uint32_t mipLevel = 0);
+        static void AttachRenderbuffer(FrameBuffer &framebuffer, RenderBuffer &renderBuffer, FrameBufferAttachment attachment);
+        static bool CheckFramebuffer(FrameBuffer &framebuffer);
+        static void DestroyFramebuffer(FrameBuffer &framebuffer);
+        static void BindFramebuffer(FrameBuffer &framebuffer);
+        static void BindDefaultFramebuffer();
+        static void SetFramebufferDrawBuffers(FrameBuffer &framebuffer, const std::vector<FrameBufferAttachment> &attachments);
     };
 
     inline bool Renderer::Init()
@@ -89,6 +100,10 @@ namespace RGE
     inline void Renderer::SetRenderState(RenderState renderState)
     {
         renderer->SetRenderState(renderState);
+    }
+    inline void Renderer::SetViewport(int x, int y, uint32_t width, uint32_t height)
+    {
+        renderer->SetViewport(x, y, width, height);
     }
     inline void Renderer::CreatePipeline(Pipeline &pipeline, std::string vertSource, std::string fragSource)
     {
@@ -225,5 +240,37 @@ namespace RGE
     inline void Renderer::DestroyRenderbuffer(RenderBuffer &renderBuffer)
     {
         renderer->DestroyRenderbuffer(renderBuffer);
+    }
+    inline void Renderer::CreateFramebuffer(FrameBuffer &framebuffer)
+    {
+        renderer->CreateFramebuffer(framebuffer);
+    }
+    inline void Renderer::AttachTexture(FrameBuffer &framebuffer, Texture &texture, FrameBufferAttachment attachment, uint32_t mipLevel)
+    {
+        renderer->AttachTexture(framebuffer, texture, attachment, mipLevel);
+    }
+    inline void Renderer::AttachRenderbuffer(FrameBuffer &framebuffer, RenderBuffer &renderBuffer, FrameBufferAttachment attachment)
+    {
+        renderer->AttachRenderbuffer(framebuffer, renderBuffer, attachment);
+    }
+    inline bool Renderer::CheckFramebuffer(FrameBuffer &framebuffer)
+    {
+        return renderer->CheckFramebuffer(framebuffer);
+    }
+    inline void Renderer::DestroyFramebuffer(FrameBuffer &framebuffer)
+    {
+        renderer->DestroyFramebuffer(framebuffer);
+    }
+    inline void Renderer::BindFramebuffer(FrameBuffer &framebuffer)
+    {
+        renderer->BindFramebuffer(framebuffer);
+    }
+    inline void Renderer::BindDefaultFramebuffer()
+    {
+        renderer->BindDefaultFramebuffer();
+    }
+    inline void Renderer::SetFramebufferDrawBuffers(FrameBuffer &framebuffer, const std::vector<FrameBufferAttachment> &attachments)
+    {
+        renderer->SetFramebufferDrawBuffers(framebuffer, attachments);
     }
 }

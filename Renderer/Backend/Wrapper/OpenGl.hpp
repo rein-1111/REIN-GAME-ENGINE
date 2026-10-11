@@ -13,6 +13,8 @@ namespace OpenGlWrapper
         static void ClearBufferBit(int mask);
         static void Enable(GLenum mode);
 
+        static void SetViewport(int x, int y, unsigned int width, unsigned int height);
+
         static void CreateShader(unsigned int &shader, const char *shaderSource, GLenum shaderType);
         static void CompileShader(unsigned int &shader);
         static void CreateProgram(unsigned int &program, unsigned int &vertexShader, unsigned int &fragmentShader);
@@ -54,6 +56,15 @@ namespace OpenGlWrapper
         static void CreateRenderbuffer(unsigned int &renderBuffer, GLenum format, unsigned int width, unsigned int height);
         static void ResizeRenderbuffer(unsigned int &renderBuffer, GLenum fotmat, unsigned int width, unsigned int height);
         static void DeleteRenderBuffer(unsigned int &renderBuffer);
+
+        static void CreateFramebuffer(unsigned int &frameBuffer);
+        static void SetFramebufferDrawBuffers(unsigned int &frameBuffer, const std::vector<GLenum> &attachments);
+        static void AttachTexture(unsigned int &frameBuffer, unsigned int &texture, GLenum attachment, unsigned int mipLevel);
+        static void AttachRenderbuffer(unsigned int &frameBuffer, unsigned int &renderBuffer, GLenum attachment);
+        static bool CheckFramebuffer(unsigned int &frameBuffer);
+        static void BindFramebuffer(unsigned int &frameBuffer);
+        static void BindDefaultFramebuffer();
+        static void DestroyFramebuffer(unsigned int &frameBuffer);
     };
 
     inline bool OpenGl::Init()
@@ -81,22 +92,60 @@ namespace OpenGlWrapper
         glEnable(mode);
     }
 
+    inline void OpenGl::SetViewport(int x, int y, unsigned int width, unsigned int height)
+    {
+        glViewport(x, y, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+    }
+
     inline void OpenGl::CreateShader(unsigned int &shader, const char *shaderSource, GLenum shaderType)
     {
         shader = glCreateShader(shaderType);
         glShaderSource(shader, 1, &shaderSource, nullptr);
     }
+    // inline void OpenGl::CompileShader(unsigned int &shader)
+    // {
+    //     glCompileShader(shader);
+    // }
     inline void OpenGl::CompileShader(unsigned int &shader)
     {
         glCompileShader(shader);
+        GLint success;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            GLint length;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+            std::vector<char> log(length);
+            glGetShaderInfoLog(shader, length, nullptr, log.data());
+            std::cerr << "Shader compilation failed:\n"
+                      << log.data() << '\n';
+        }
     }
+    // inline void OpenGl::CreateProgram(unsigned int &program, unsigned int &vertexShader, unsigned int &fragmentShader)
+    // {
+    //     program = glCreateProgram();
+    //     glAttachShader(program, vertexShader);
+    //     glAttachShader(program, fragmentShader);
+    //     glLinkProgram(program);
+    // }
     inline void OpenGl::CreateProgram(unsigned int &program, unsigned int &vertexShader, unsigned int &fragmentShader)
+{
+    program = glCreateProgram();
+    glAttachShader(program, vertexShader);
+    glAttachShader(program, fragmentShader);
+    glLinkProgram(program);
+
+    GLint success;
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    if (!success)
     {
-        program = glCreateProgram();
-        glAttachShader(program, vertexShader);
-        glAttachShader(program, fragmentShader);
-        glLinkProgram(program);
+        GLint length;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+        std::vector<char> log(length);
+        glGetProgramInfoLog(program, length, nullptr, log.data());
+        std::cerr << "Program linking failed:\n" << log.data() << '\n';
     }
+}
     inline void OpenGl::DeleteShader(unsigned int &shader)
     {
         glDeleteShader(shader);
@@ -290,5 +339,46 @@ namespace OpenGlWrapper
     inline void OpenGl::DeleteRenderBuffer(unsigned int &renderBuffer)
     {
         glDeleteRenderbuffers(1, &renderBuffer);
+    }
+
+    inline void OpenGl::CreateFramebuffer(unsigned int &frameBuffer)
+    {
+        glCreateFramebuffers(1, &frameBuffer);
+    }
+
+    inline void OpenGl::SetFramebufferDrawBuffers(unsigned int &frameBuffer, const std::vector<GLenum> &attachments)
+    {
+        glNamedFramebufferDrawBuffers(frameBuffer, static_cast<GLsizei>(attachments.size()), attachments.data());
+    }
+
+    inline void OpenGl::AttachTexture(unsigned int &frameBuffer, unsigned int &texture, GLenum attachment, unsigned int mipLevel)
+    {
+        glNamedFramebufferTexture(frameBuffer, attachment, texture, mipLevel);
+    }
+
+    inline void OpenGl::AttachRenderbuffer(unsigned int &frameBuffer, unsigned int &renderBuffer, GLenum attachment)
+    {
+        glNamedFramebufferRenderbuffer(frameBuffer, attachment, GL_RENDERBUFFER, renderBuffer);
+    }
+
+    inline bool OpenGl::CheckFramebuffer(unsigned int &frameBuffer)
+    {
+        return glCheckNamedFramebufferStatus(frameBuffer, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+    }
+
+    inline void OpenGl::BindFramebuffer(unsigned int &frameBuffer)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+    }
+
+    inline void OpenGl::BindDefaultFramebuffer()
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    inline void OpenGl::DestroyFramebuffer(unsigned int &frameBuffer)
+    {
+        glDeleteFramebuffers(1, &frameBuffer);
+        frameBuffer = 0;
     }
 }

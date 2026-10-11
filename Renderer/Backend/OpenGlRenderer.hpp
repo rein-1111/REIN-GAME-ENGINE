@@ -31,9 +31,14 @@ namespace RGE
         {
             unsigned int textureBuffer;
         };
-        struct RenderBufferObject{
+        struct RenderBufferObject
+        {
             unsigned int renderBufferObject;
             RenderBufferFormat format;
+        };
+        struct FrameBufferObject
+        {
+            unsigned int frameBuffer;
         };
 
     private:
@@ -50,7 +55,9 @@ namespace RGE
         std::map<Texture, TextureBufferObject> TBOStorage;
         uint32_t TBONextId = 0;
         std::map<RenderBuffer, RenderBufferObject> RBOStorage;
-        uint32_t RBONextId =0;
+        uint32_t RBONextId = 0;
+        std::map<FrameBuffer, FrameBufferObject> FBOStorage;
+        uint32_t FBONextId = 0;
 
         static GLenum ToGL(DataType type);
         static GLenum ToGL(BufferUsage usage);
@@ -63,12 +70,15 @@ namespace RGE
         static GLenum ToGL(PixelType type);
         static GLenum ToGL(RenderState renderState);
         static GLenum ToGL(RenderBufferFormat renderBufferFormat);
+        static GLenum ToGL(FrameBufferAttachment frameBufferAttachment);
 
     public:
         bool Init() override;
         void SetClearColor(Color &color) override;
         void ClearBufferBit(BufferBit &bufferBit) override;
         void SetRenderState(RenderState renderState) override;
+
+        void SetViewport(int x, int y, uint32_t width, uint32_t height) override;
 
         void CreatePipeline(Pipeline &pipeline, std::string vertSource, std::string fragSource) override;
         void UsePipeline(Pipeline &pipeline) override;
@@ -112,6 +122,15 @@ namespace RGE
         void CreateRenderbuffer(RenderBuffer &renderBuffer, RenderBufferDesc &desc) override;
         void ResizeRenderbuffer(RenderBuffer &renderBuffer, uint32_t width, uint32_t height) override;
         void DestroyRenderbuffer(RenderBuffer &renderBuffer) override;
+
+        void CreateFramebuffer(FrameBuffer &framebuffer) override;
+        void SetFramebufferDrawBuffers(FrameBuffer &framebuffer, const std::vector<FrameBufferAttachment> &attachments) override;
+        void AttachTexture(FrameBuffer &framebuffer, Texture &texture, FrameBufferAttachment attachment, uint32_t mipLevel = 0) override;
+        void AttachRenderbuffer(FrameBuffer &framebuffer, RenderBuffer &renderBuffer, FrameBufferAttachment attachment) override;
+        bool CheckFramebuffer(FrameBuffer &framebuffer) override;
+        void DestroyFramebuffer(FrameBuffer &framebuffer) override;
+        void BindFramebuffer(FrameBuffer &framebuffer) override;
+        void BindDefaultFramebuffer() override;
     };
 
     inline GLenum OpenGlRenderer::ToGL(DataType type)
@@ -298,6 +317,25 @@ namespace RGE
         return 0;
     }
 
+    inline GLenum OpenGlRenderer::ToGL(FrameBufferAttachment attachment)
+    {
+        if (attachment == FrameBufferAttachment::COLOR0)
+            return GL_COLOR_ATTACHMENT0;
+        if (attachment == FrameBufferAttachment::COLOR1)
+            return GL_COLOR_ATTACHMENT1;
+        if (attachment == FrameBufferAttachment::COLOR2)
+            return GL_COLOR_ATTACHMENT2;
+        if (attachment == FrameBufferAttachment::COLOR3)
+            return GL_COLOR_ATTACHMENT3;
+        if (attachment == FrameBufferAttachment::DEPTH)
+            return GL_DEPTH_ATTACHMENT;
+        if (attachment == FrameBufferAttachment::STENCIL)
+            return GL_STENCIL_ATTACHMENT;
+        if (attachment == FrameBufferAttachment::DEPTH_STENCIL)
+            return GL_DEPTH_STENCIL_ATTACHMENT;
+        return 0;
+    }
+
     inline bool OpenGlRenderer::Init()
     {
         return OpenGlWrapper::OpenGl::Init();
@@ -327,6 +365,11 @@ namespace RGE
     {
         OpenGlWrapper::OpenGl::Enable(ToGL(renderState));
     }
+
+    inline void OpenGlRenderer::SetViewport(int x, int y, uint32_t width, uint32_t height)
+{
+    OpenGlWrapper::OpenGl::SetViewport(x, y, width, height);
+}
 
     inline void OpenGlRenderer::CreatePipeline(Pipeline &pipeline, std::string vertSource, std::string fragSource)
     {
@@ -740,7 +783,8 @@ namespace RGE
     inline void OpenGlRenderer::ResizeRenderbuffer(RenderBuffer &renderBuffer, uint32_t width, uint32_t height)
     {
         auto it = RBOStorage.find(renderBuffer);
-        if (it == RBOStorage.end()) return;
+        if (it == RBOStorage.end())
+            return;
 
         OpenGlWrapper::OpenGl::ResizeRenderbuffer(it->second.renderBufferObject, ToGL(it->second.format), width, height);
     }
@@ -748,9 +792,90 @@ namespace RGE
     inline void OpenGlRenderer::DestroyRenderbuffer(RenderBuffer &renderBuffer)
     {
         auto it = RBOStorage.find(renderBuffer);
-        if (it == RBOStorage.end()) return;
+        if (it == RBOStorage.end())
+            return;
 
         OpenGlWrapper::OpenGl::DeleteRenderBuffer(it->second.renderBufferObject);
+        RBOStorage.erase(renderBuffer);
         renderBuffer.handle = UINT32_MAX;
+    }
+
+    inline void OpenGlRenderer::CreateFramebuffer(FrameBuffer &framebuffer)
+    {
+        FrameBufferObject fbo;
+        OpenGlWrapper::OpenGl::CreateFramebuffer(fbo.frameBuffer);
+        framebuffer.handle = FBONextId++;
+        FBOStorage.emplace(framebuffer, fbo);
+    }
+
+    inline void OpenGlRenderer::SetFramebufferDrawBuffers(FrameBuffer &framebuffer, const std::vector<FrameBufferAttachment> &attachments)
+    {
+        auto it = FBOStorage.find(framebuffer);
+        if (it == FBOStorage.end())
+            return;
+
+        std::vector<GLenum> drawBuffers;
+        drawBuffers.reserve(attachments.size());
+
+        for (auto attachment : attachments)
+        {
+            drawBuffers.push_back(ToGL(attachment));
+        }
+
+        OpenGlWrapper::OpenGl::SetFramebufferDrawBuffers(it->second.frameBuffer, drawBuffers);
+    }
+
+    inline void OpenGlRenderer::AttachTexture(FrameBuffer &framebuffer, Texture &texture, FrameBufferAttachment attachment, uint32_t mipLevel)
+    {
+        auto itFBO = FBOStorage.find(framebuffer);
+        auto itTexture = TBOStorage.find(texture);
+        if (itFBO == FBOStorage.end() || itTexture == TBOStorage.end())
+            return;
+
+        OpenGlWrapper::OpenGl::AttachTexture(itFBO->second.frameBuffer, itTexture->second.textureBuffer, ToGL(attachment), mipLevel);
+    }
+
+    inline void OpenGlRenderer::AttachRenderbuffer(FrameBuffer &framebuffer, RenderBuffer &renderBuffer, FrameBufferAttachment attachment)
+    {
+        auto itFBO = FBOStorage.find(framebuffer);
+        auto itRBO = RBOStorage.find(renderBuffer);
+        if (itFBO == FBOStorage.end() || itRBO == RBOStorage.end())
+            return;
+
+        OpenGlWrapper::OpenGl::AttachRenderbuffer(itFBO->second.frameBuffer, itRBO->second.renderBufferObject, ToGL(attachment));
+    }
+
+    inline bool OpenGlRenderer::CheckFramebuffer(FrameBuffer &framebuffer)
+    {
+        auto it = FBOStorage.find(framebuffer);
+        if (it == FBOStorage.end())
+            return false;
+
+        return OpenGlWrapper::OpenGl::CheckFramebuffer(it->second.frameBuffer);
+    }
+
+    inline void OpenGlRenderer::BindFramebuffer(FrameBuffer &framebuffer)
+    {
+        auto it = FBOStorage.find(framebuffer);
+        if (it == FBOStorage.end())
+            return;
+
+        OpenGlWrapper::OpenGl::BindFramebuffer(it->second.frameBuffer);
+    }
+
+    inline void OpenGlRenderer::BindDefaultFramebuffer()
+    {
+        OpenGlWrapper::OpenGl::BindDefaultFramebuffer();
+    }
+
+    inline void OpenGlRenderer::DestroyFramebuffer(FrameBuffer &framebuffer)
+    {
+        auto it = FBOStorage.find(framebuffer);
+        if (it == FBOStorage.end())
+            return;
+
+        OpenGlWrapper::OpenGl::DestroyFramebuffer(it->second.frameBuffer);
+        FBOStorage.erase(it);
+        framebuffer.handle = UINT32_MAX;
     }
 }
